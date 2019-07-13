@@ -1,11 +1,14 @@
 {
     "enabled": true,
 
-    // if set to true, the commands will be prefixed with @
-    // otherwise they will be prefixed with \
-    "javadoc": false,
+    // If set to true, the commands will be prefixed with '@'.  Otherwise they will be prefixed with '\'.
+    "ccppdoc": true,
 
-    // the maximum amount of lines to parse to retrieve
-    // all the parameters of a function or class
-    "max_lines": 5
+    // The maximum amount of lines to parse to retrieve all the parameters of a function or class.
+    "max_lines": 5,
+
+    // The default param margin.  This defines the amount of spaces between @param and it's description.
+    // Example:
+    // @param {param_margin}  {description}.
+    "default_param_margin": 5
 }
