@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+import sublime
+import sublime_plugin
+
 import sublime
 import sublime_plugin
 import re
@@ -119,9 +121,9 @@ def get_function_args(fn_str):
 
     return result
 
-class DoxyDocCommand(sublime_plugin.TextCommand):
+class DoxydocCommand(sublime_plugin.TextCommand):
     """
-    @brief      Class for doxydoc command.
+    @brief      Class for DoxyDoc command.
     """
     def set_up(self):
         """
@@ -210,8 +212,8 @@ class DoxyDocCommand(sublime_plugin.TextCommand):
             if not current_line or current_line.find('/**') == -1:
                 return '\n * ${0}\n */'
 
-            # Find the characters '/***' in the current line.
-            if current_line.find('/***') == 0:
+            # Find the characters '/**' in the current line.
+            if (current_line.find('/**') == 0) and (current_line == 0):
                 return self.header_snippet()
 
             # Increment the point to the end of the current line.
