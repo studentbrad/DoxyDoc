@@ -15,8 +15,6 @@ def get_setting(key, default=None):
 
 setting = get_setting
 
-now = datetime.datetime.now()
-
 def read_line(view, point):
     """
     @brief      Reads a line.
@@ -26,8 +24,8 @@ def read_line(view, point):
 
     @return     The next line
     """
-    if (point >= view.size()):
-        return
+    # if (point >= view.size()):
+    #     return
 
     next_line = view.line(point)
 
@@ -47,13 +45,13 @@ def get_template_args(templ_str):
     """
     print('Before: {0}'.format(templ_str))
 
-    # Remove decltype statements.
+    # remove decltype statements
     templ_str = re.sub(r"decltype\(.+\)", "", templ_str)
 
-    # Remove default parameters.
+    # remove default parameters
     templ_str = re.sub(r"\s*=\s*.+,", ",", templ_str)
 
-    # Remove type from template.
+    # remove type from template
     templ_str = re.sub(r"[A-Za-z_][\w.<>]*\s+([A-Za-z_][\w.<>]*)", r"\1", templ_str)
 
     print('After: {0}'.format(templ_str))
@@ -74,48 +72,48 @@ def get_function_args(fn_str):
     """
     print('Before: {0}'.format(fn_str))
 
-    # Remove references and pointers.
+    # remove references and pointers
     fn_str = fn_str.replace("&", "")
     fn_str = fn_str.replace("*", "")
 
-    # Remove va_list and variadic templates.
+    # remove va_list and variadic templates
     fn_str = fn_str.replace("...", "")
 
-    # Remove cv-qualifiers.
+    # remove cv-qualifiers
     fn_str = re.sub(r"(?:const|volatile)\s*", "", fn_str)
 
-    # Remove namespaces.
+    # remove namespaces
     fn_str = re.sub(r"\w+::", "", fn_str)
 
-    # Remove template arguments in types.
+    # remove template arguments in types
     fn_str = re.sub(r"([a-zA-Z_]\w*)\s*<.+?>", r"\1", fn_str)
 
-    # Remove parentheses.
+    # remove parentheses
     fn_str = re.sub(r"\((.*?)\)", r"\1", fn_str)
 
-    # Remove arrays.
+    # remove arrays
     fn_str = re.sub(r"\[.*?\]", "", fn_str)
 
     print('After: {0}'.format(fn_str))
 
     arg_regex = r"(?P<type>[a-zA-Z_]\w*)\s*(?P<name>[a-zA-Z_]\w*)"
 
-    # If there is only one argument.
+    # if there is only one argument
     if ',' not in fn_str:
-        # Add the type void and an empty string for the name as a tuple.
+        # add the type void and an empty string for the name as a tuple
         if ' ' not in fn_str:
             return [("void", "")]
-        # Add the type and name of the input as a tuple.
+        # add the type and name of the input as a tuple
         else:
             m = re.search(arg_regex, fn_str)
             if m and m.group("type"):
                 return [(m.group("type"), m.group("name"))]
 
-    # If there is more than one argument.
+    # if there is more than one argument
     result = []
     for arg in fn_str.split(','):
         m = re.search(arg_regex, arg)
-        # Add the type and name of the input as a tuple.
+        # add the type and name of the input as a tuple
         if m and m.group('type'):
             result.append( (m.group('type'), m.group('name')) )
 
@@ -199,56 +197,56 @@ class DoxydocCommand(sublime_plugin.TextCommand):
         @return     The snippet.
         """
         try:
-            # Get the point at the begining of the current line.
+            # get the point at the begining of the current line
             point = view.sel()[0].begin()
 
-            # Get the maximum number of lines.
+            # get the maximum number of lines
             max_lines = setting('max_lines', 5)
 
-            # Read the current line.
+            # read the current line
             current_line = read_line(view, point)
 
-            # Find the characters '/**' in the current line.
-            if not current_line or current_line.find('/**') == -1:
+            # find the characters '/**' in the current line
+            if (not current_line) or (current_line.find('/**') == -1):
                 return '\n * ${0}\n */'
 
-            # Find the characters '/**' in the current line.
-            if (current_line.find('/**') == 0) and (current_line == 0):
-                return self.header_snippet()
-
-            # Increment the point to the end of the current line.
+            # increment the point to the end of the current line
+            point_prime = point
             point += len(current_line) + 1
 
-            # Read the next line.
+            # read the next line
             next_line = read_line(view, point)
 
-            # If the next line does not exist output the characters '*/'.
+            # if the next line does not exist output the characters '*/'
             if not next_line:
+                # find the characters '/**' in the current line
+                if (current_line.find('/**') == 0) and (point_prime == 3):
+                    return self.header_snippet()
                 return '\n * ${0}\n */'
 
-            # If the next line is already a comment output the character '*'.
+            # if the next line is already a comment output the character '*'
             if re.search(r'^\s*\*', next_line):
                 return '\n *'
 
-            # Search for a template in the next line.
+            # search for a template in the next line
             regex_template = re.search(self.regexp['templates'], next_line)
             if regex_template:
-                # The following line is either a template function or templated class/struct.
+                # the following line is either a template function or templated class/struct
                 template_args = get_template_args(regex_template.group(1))
 
-                # Increment the point to the end of the current line.
+                # increment the point to the end of the current line
                 point += len(next_line) + 1
 
-                # Read the next line.
+                # read the next line
                 nnext_line = read_line(view, point)
 
-                # Read the function line.
+                # read the function line
                 function_line = read_line(view, point)
 
-                # Record the point at the end of the function line.
+                # record the point at the end of the function line
                 function_endpoint = point + len(function_line) + 1
 
-                # Read the next lines up to 'max_lines'.
+                # read the next lines up to 'max_lines'
                 for x in range(0, max_lines + 1):
                     line = read_line(view, function_endpoint)
                     if not line:
@@ -257,17 +255,17 @@ class DoxydocCommand(sublime_plugin.TextCommand):
                     function_line += line
                     function_endpoint += len(line) + 1
 
-                # Check if it's a templated constructor or destructor.
+                # check if it's a templated constructor or destructor
                 regex_constructor = re.match(self.regexp['constructor'], function_line)
                 if regex_constructor:
                     return self.template_function_snippet(regex_constructor, template_args)
 
-                # Check if it's a templated function.
+                # check if it's a templated function
                 regex_function = re.match(self.regexp['function'], function_line)
                 if regex_function:
                     return self.template_function_snippet(regex_function, template_args)
 
-                # Check if it's a templated class.
+                # check if it's a templated class
                 regex_class = re.match(self.regexp['class'], nnext_line)
                 if regex_class:
                     return self.template_snippet(template_args)
@@ -284,26 +282,30 @@ class DoxydocCommand(sublime_plugin.TextCommand):
                 function_lines += line
                 function_endpoint += len(line) + 1
 
-            # Check if it's a regular constructor or destructor.
+            # check if it's a regular constructor or destructor
             regex_constructor = re.match(self.regexp['constructor'], function_lines)
             if regex_constructor:
                 return self.function_snippet(regex_constructor)
 
-            # Check if it's a regular function.
+            # check if it's a regular function
             regex_function = re.search(self.regexp['function'], function_lines)
             if regex_function:
                 return self.function_snippet(regex_function)
 
-            # Check if it's a regular class.
+            # check if it's a regular class
             regex_class = re.search(self.regexp['class'], next_line)
             if regex_class:
                 return self.regular_snippet()
 
-            # If all else fails, just send a closing snippet.
+            # find the characters '/**' in the current line
+            if (current_line.find('/**') == 0) and (point_prime == 3):
+                return self.header_snippet()
+
+            # if all else fails, just send a closing snippet
             return '\n * ${0}\n */'
 
-        except:
-            # If an error occurs, just send a closing snippet.
+        except Exception as e:
+            # if an error occurs, just send a closing snippet
             return '\n * ${0}\n */'
 
     def header_snippet(self):
@@ -314,12 +316,13 @@ class DoxydocCommand(sublime_plugin.TextCommand):
         
         @return     A header snippet.
         """
-        snippet = ('\n * {0}brief      {brief description}'
-                   '\n * {0}details    {long description}'
+        now = datetime.datetime.now()
+        snippet = ('\n * {0}brief   ${{1:{{brief description\\}}}}'
+                   '\n * {0}details ${{2:{{long description\\}}}}'
                    '\n *'
-                   '\n * {0}date       {1} {2}, {3}'
-                   '\n * {0}author     {4}'
-                   '\n */'.format(self.command_type, now.day, now.month, now.year, getpass.getuser()))
+                   '\n * {0}author  {1}'
+                   '\n * {0}date    {2}'
+                   '\n */'.format(self.command_type, getpass.getuser(), now.strftime('%b %d, %Y')))
 
         return snippet
 
@@ -351,10 +354,10 @@ class DoxydocCommand(sublime_plugin.TextCommand):
                    '\n * {0}details ${{2:{{long description\\}}}}'
                    '\n *'.format(self.command_type))
 
-        # Get the default param margin.
+        # get the default param margin
         param_margin = setting('default_param_margin', 5)
 
-        # Change the param margin to if a tparam length is greater than the default margin.
+        # change the param margin to if a tparam length is greater than the default margin
         for tparam_name in template_args:
             if len(tparam_name) > param_margin:
                 param_margin = len(tparam_name)
@@ -362,7 +365,8 @@ class DoxydocCommand(sublime_plugin.TextCommand):
         index = 3
         for tparam_name in template_args:
             len_tparam_name = len(tparam_name)
-            snippet += '\n * {0}tparam  {1}{3}  ${{{2}:{{description\\}}}}'.format(self.command_type, tparam_name, index, ' ' * (param_margin - len_tparam_name - 1))
+            snippet += '\n * {0}tparam  {1}{3}  ${{{2}:{{description\\}}}}' \
+            .format(self.command_type, tparam_name, index, ' ' * (param_margin - len_tparam_name - 1))
             index += 1
 
         snippet += '\n */'
@@ -388,15 +392,15 @@ class DoxydocCommand(sublime_plugin.TextCommand):
                     '\n *'.format(self.command_type, index, index + 1))
         index += 2
 
-        # Get the default param margin.
+        # get the default param margin
         param_margin = setting('default_param_margin', 5)
 
-        # Change the param margin to if a tparam length is greater than the default margin.
+        # change the param margin to if a tparam length is greater than the default margin
         for tparam_name in template_args:
             if len(tparam_name) > param_margin:
                 param_margin = len(tparam_name)
 
-        # Change the param margin to if a tparam length is greater than the default margin.
+        # change the param margin to if a tparam length is greater than the default margin
         for _, param_name in function_args:
             if len(param_name) > param_margin:
                 param_margin = len(param_name)
@@ -406,19 +410,22 @@ class DoxydocCommand(sublime_plugin.TextCommand):
                 if param_type in template_args:
                     template_args.remove(param_type)
                 len_param_name = len(param_name)
-                snippet += '\n * {0}param   {1}{2}  ${{{3}:{{description\\}}}}'.format(self.command_type, param_name, ' ' * (param_margin - len_param_name), index)
+                snippet += '\n * {0}param   {1}{2}  ${{{3}:{{description\\}}}}' \
+                .format(self.command_type, param_name, ' ' * (param_margin - len_param_name), index)
                 index += 1
 
         for tparam_name in template_args:
             len_tparam_name = len(tparam_name)
-            snippet += '\n * {0}tparam  {1}{2}  ${{{3}:{{description\\}}}}'.format(self.command_type, tparam_name, ' ' * (param_margin - len_tparam_name - 1), index)
+            snippet += '\n * {0}tparam  {1}{2}  ${{{3}:{{description\\}}}}' \
+            .format(self.command_type, tparam_name, ' ' * (param_margin - len_tparam_name - 1), index)
             index += 1
 
         return_type = regex_obj.group('return')
 
         if return_type and return_type != 'void':
             snippet += '\n *'
-            snippet += '\n * {0}return  ${{{2}:{{description\\}}}}'.format(self.command_type, ' ' * (param_margin - 1), index)
+            snippet += '\n * {0}return  ${{{2}:{{description\\}}}}' \
+            .format(self.command_type, ' ' * (param_margin - 1), index)
 
         snippet += '\n */'
 
@@ -442,10 +449,10 @@ class DoxydocCommand(sublime_plugin.TextCommand):
                     '\n * {0}details ${{{2}:{{long description\\}}}}'.format(self.command_type, index, index + 1))
         index += 2
 
-        # Get the default param margin.
+        # get the default param margin
         param_margin = setting('default_param_margin', 5)
 
-        # Change the param margin to if a param length is greater than the default margin.
+        # change the param margin to if a param length is greater than the default margin
         for _, param_name in function_args:
             if len(param_name) > param_margin:
                 param_margin = len(param_name)
@@ -454,14 +461,16 @@ class DoxydocCommand(sublime_plugin.TextCommand):
             snippet += '\n *'
             for _, param_name in function_args:
                 len_param_name = len(param_name)
-                snippet += '\n * {0}param   {1}{2}  ${{{3}:{{description\\}}}}'.format(self.command_type, param_name, ' ' * (param_margin - len_param_name), index)
+                snippet += '\n * {0}param   {1}{2}  ${{{3}:{{description\\}}}}' \
+                .format(self.command_type, param_name, ' ' * (param_margin - len_param_name), index)
                 index += 1
 
         return_type = regex_obj.group('return')
 
         if return_type and return_type != 'void':
             snippet += '\n *'
-            snippet += '\n * {0}return  ${{{2}:{{description\\}}}}'.format(self.command_type, ' ' * (param_margin - 1), index)
+            snippet += '\n * {0}return  ${{{2}:{{description\\}}}}' \
+            .format(self.command_type, ' ' * (param_margin - 1), index)
 
         snippet += '\n */'
 
@@ -492,17 +501,17 @@ class DoxygenCompletions(sublime_plugin.EventListener):
                 ('weakgroup',     'weakgroup ${1:{group-name\}} ${2:{group-title\}}')]
 
     def on_query_completions(self, view, prefix, locations):
-        # Only trigger within comments.
+        # only trigger within comments
         if not view.match_selector(locations[0], 'comment'):
             return []
 
         pt = locations[0] - len(prefix) - 1
-        # Get character before.
+        # get character before
         ch = view.substr(sublime.Region(pt, pt + 1))
 
         flags = sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS
 
-        # Character given isn't '\' or '@'.
+        # character given isn't '\' or '@'
         if ch != self.command_type:
             return ([], flags)
 
